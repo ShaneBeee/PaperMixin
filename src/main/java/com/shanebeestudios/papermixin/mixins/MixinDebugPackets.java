@@ -22,23 +22,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.example.mixin.core;
+package com.shanebeestudios.papermixin.mixins;
 
-import com.example.command.HelloCommand;
-import org.bukkit.command.Command;
-import org.bukkit.command.SimpleCommandMap;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.protocol.common.custom.PathfindingDebugPayload;
+import net.minecraft.network.protocol.game.DebugPackets;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.pathfinder.Path;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = SimpleCommandMap.class)
-public abstract class MixinSimpleCommandMap {
-  @Shadow public abstract boolean register(String fallbackPrefix, Command command);
+@Mixin(DebugPackets.class)
+public abstract class MixinDebugPackets {
+    @Shadow
+    public static void sendPacketToAllPlayers(ServerLevel level, CustomPacketPayload payload) {
+    }
 
-  @Inject(method = "setDefaultCommands()V", at = @At("TAIL"), remap = false)
-  public void registerOwnCommands(CallbackInfo callback) {
-    this.register("example", new HelloCommand("hello"));
-  }
+    @Overwrite
+    public static void sendPathFindingPacket(Level level, Mob mob, Path path, float nodeReachProximity) {
+        if (path != null) {
+            sendPacketToAllPlayers((ServerLevel) level, new PathfindingDebugPayload(mob.getId(), path, nodeReachProximity));
+        }
+    }
 }

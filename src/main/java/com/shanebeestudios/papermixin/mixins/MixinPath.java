@@ -22,22 +22,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.example.mixin.core;
+package com.shanebeestudios.papermixin.mixins;
 
-import java.util.logging.Logger;
-import org.bukkit.craftbukkit.v1_20_R3.CraftServer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.level.pathfinder.Node;
+import net.minecraft.world.level.pathfinder.Path;
+import net.minecraft.world.level.pathfinder.Target;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = CraftServer.class)
-public abstract class MixinCraftServer {
-  @Shadow public abstract Logger getLogger();
+import java.util.Set;
 
-  @Inject(method = "<init>", at = @At("RETURN"))
-  private void onConstruction(CallbackInfo callback) {
-    this.getLogger().info("Hello World!");
-  }
+@SuppressWarnings("DataFlowIssue")
+@Mixin(Path.class)
+public abstract class MixinPath {
+
+    @Shadow
+    public abstract void setDebug(Node[] debugNodes, Node[] debugSecondNodes, Set<Target> debugTargetNodes);
+
+    @Inject(method = "writeToStream(Lnet/minecraft/network/FriendlyByteBuf;)V", at = @At("HEAD"))
+    public void writeToStream(FriendlyByteBuf buf, CallbackInfo info) {
+        Path path = (Path) (Object) this;
+        BlockPos target = path.getTarget();
+        setDebug(path.nodes.stream().filter(pathnode -> !pathnode.closed).toArray(Node[]::new),
+            path.nodes.stream().filter(pathNode -> pathNode.closed).toArray(Node[]::new),
+            Set.of(new Target(target.getX(), target.getY(), target.getZ())));
+    }
 }

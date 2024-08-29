@@ -16,7 +16,7 @@ plugins {
 val libs = extensions.getByType(org.gradle.accessors.dm.LibrariesForLibs::class)
 
 java {
-  javaTarget(17)
+  javaTarget(21)
   withSourcesJar()
 }
 

@@ -1,5 +1,15 @@
-Ignite Mod Template [![Discord](https://img.shields.io/discord/819522977586348052?style=for-the-badge)](https://discord.gg/rYpaxPFQrj)
+Paper Mixin Mod
 ===================
 
-A template for creating an [Ignite](https://github.com/vectrix-space/ignite) 
-mod for [Paper](https://papermc.io/) 1.20.4.
+
+## REQUIREMENTS:
+- [Ignite](https://github.com/vectrix-space/ignite) mod loader
+- PaperMC Server
+- [Dev Tools Unlocker](https://modrinth.com/mod/dev-tools-unlocker/) mod
+
+## INSTALL:
+- Install Ignite on your server and follow their instructions
+- Plop this mod in the mods folder
+
+## CURRENT FEATURES:
+- Pathfinder debug (F3+F6 - click pathfinder)

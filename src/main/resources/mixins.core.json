@@ -1,0 +1,12 @@
+{
+    "required": true,
+    "minVersion": "0.8.5",
+    "package": "com.shanebeestudios.papermixin.mixins",
+    "plugin": "com.shanebeestudios.papermixin.plugins.CorePlugin",
+    "target": "@env(DEFAULT)",
+    "compatibilityLevel": "JAVA_21",
+    "server": [
+        "MixinPath",
+        "MixinDebugPackets"
+    ]
+}
