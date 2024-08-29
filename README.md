@@ -13,3 +13,4 @@ Paper Mixin Mod
 
 ## CURRENT FEATURES:
 - Pathfinder debug (F3+F6 - click pathfinder)
+- Brain/Poi/Village debug (F3+F6 - click brain/poi/village)
