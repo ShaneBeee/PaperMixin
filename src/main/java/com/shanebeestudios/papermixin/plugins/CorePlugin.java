@@ -24,6 +24,7 @@
  */
 package com.shanebeestudios.papermixin.plugins;
 
+import net.minecraft.SharedConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.ClassNode;
@@ -36,6 +37,8 @@ import java.util.Set;
 public final class CorePlugin implements IMixinConfigPlugin {
     @Override
     public void onLoad(final @NotNull String mixinPackage) {
+        // Enable debug/test commands
+        SharedConstants.IS_RUNNING_IN_IDE = true;
     }
 
     @Override
