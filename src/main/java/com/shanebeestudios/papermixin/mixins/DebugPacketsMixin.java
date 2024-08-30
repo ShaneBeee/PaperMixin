@@ -71,7 +71,6 @@ import net.minecraft.world.entity.schedule.Activity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -271,7 +270,6 @@ public abstract class DebugPacketsMixin {
     @Unique
     private static void addPoi(Brain<?> brain, MemoryModuleType<GlobalPos> memory, Set<BlockPos> pois) {
         Optional<BlockPos> blockPos = brain.getMemory(memory).map(GlobalPos::pos);
-        Objects.requireNonNull(pois);
         blockPos.ifPresent(pois::add);
     }
 
