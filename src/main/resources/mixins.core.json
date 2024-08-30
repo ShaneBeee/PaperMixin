@@ -6,7 +6,8 @@
     "target": "@env(DEFAULT)",
     "compatibilityLevel": "JAVA_21",
     "server": [
-        "MixinPath",
-        "MixinDebugPackets"
+        "DebugPacketsMixin",
+        "PathMixin"
+
     ]
 }

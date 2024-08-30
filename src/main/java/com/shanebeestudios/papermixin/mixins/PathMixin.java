@@ -39,7 +39,7 @@ import java.util.Set;
 
 @SuppressWarnings("DataFlowIssue")
 @Mixin(Path.class)
-public abstract class MixinPath {
+public abstract class PathMixin {
 
     @Shadow
     public abstract void setDebug(Node[] debugNodes, Node[] debugSecondNodes, Set<Target> debugTargetNodes);

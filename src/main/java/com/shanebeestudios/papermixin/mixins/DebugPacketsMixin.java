@@ -56,22 +56,31 @@ import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.gossip.GossipType;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
+import net.minecraft.world.entity.animal.Bee;
+import net.minecraft.world.entity.monster.breeze.Breeze;
 import net.minecraft.world.entity.monster.warden.Warden;
 import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.schedule.Activity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.gameevent.GameEventListener;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructurePiece;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.pathfinder.Path;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -81,50 +90,7 @@ import java.util.Set;
 
 @SuppressWarnings({"deprecation", "DataFlowIssue", "unused"})
 @Mixin(DebugPackets.class)
-public abstract class MixinDebugPackets {
-    @Shadow
-    private static void sendPacketToAllPlayers(ServerLevel level, CustomPacketPayload payload) {
-    }
-
-    @Shadow
-    private static List<String> getMemoryDescriptions(LivingEntity entity, long currentTime) {
-        return null;
-    }
-
-    @Overwrite
-    public static void sendPathFindingPacket(Level level, Mob mob, Path path, float nodeReachProximity) {
-        if (path != null) {
-            sendPacketToAllPlayers((ServerLevel) level, new PathfindingDebugPayload(mob.getId(), path, nodeReachProximity));
-        }
-    }
-
-    @Overwrite
-    public static void sendNeighborsUpdatePacket(Level level, BlockPos pos) {
-        if (!level.isClientSide()) {
-            sendPacketToAllPlayers((ServerLevel) level, new NeighborUpdatesDebugPayload(level.getGameTime(), pos));
-        }
-    }
-
-    @Overwrite
-    public static void sendStructurePacket(WorldGenLevel worldGenLevel, StructureStart structureStart) {
-        List<StructuresDebugPayload.PieceInfo> pieces = new ArrayList<>();
-
-        boolean isStart = true;
-        for (StructurePiece piece : structureStart.getPieces()) {
-            pieces.add(new StructuresDebugPayload.PieceInfo(piece.getBoundingBox(), isStart));
-            isStart = false;
-        }
-
-        ServerLevel serverWorld = worldGenLevel.getLevel();
-        sendPacketToAllPlayers(serverWorld, new StructuresDebugPayload(serverWorld.dimension(), structureStart.getBoundingBox(), pieces));
-    }
-
-    @Overwrite
-    public static void sendGoalSelector(Level world, Mob mob, GoalSelector goalSelector) {
-        List<DebugGoal> goals = goalSelector.getAvailableGoals().stream().map(goal -> new DebugGoal(goal.getPriority(), goal.isRunning(), goal.getGoal().toString())).toList();
-        sendPacketToAllPlayers((ServerLevel) world, new GoalDebugPayload(mob.getId(), mob.blockPosition(), goals));
-    }
-
+public abstract class DebugPacketsMixin {
     @Overwrite
     public static void sendPoiPacketsForChunk(ServerLevel level, ChunkPos pos) {
         sendPacketToAllPlayers(level, new WorldGenAttemptDebugPayload(pos.getWorldPosition().above(100), 1.0F, 1.0F, 1.0F, 1.0F, 1.0F));
@@ -176,6 +142,44 @@ public abstract class MixinDebugPackets {
     }
 
     @Overwrite
+    public static void sendPathFindingPacket(Level level, Mob mob, Path path, float nodeReachProximity) {
+        if (path != null) {
+            sendPacketToAllPlayers((ServerLevel) level, new PathfindingDebugPayload(mob.getId(), path, nodeReachProximity));
+        }
+    }
+
+    @Overwrite
+    public static void sendNeighborsUpdatePacket(Level level, BlockPos pos) {
+        if (!level.isClientSide()) {
+            sendPacketToAllPlayers((ServerLevel) level, new NeighborUpdatesDebugPayload(level.getGameTime(), pos));
+        }
+    }
+
+    @Overwrite
+    public static void sendStructurePacket(WorldGenLevel worldGenLevel, StructureStart structureStart) {
+        List<StructuresDebugPayload.PieceInfo> pieces = new ArrayList<>();
+
+        boolean isStart = true;
+        for (StructurePiece piece : structureStart.getPieces()) {
+            pieces.add(new StructuresDebugPayload.PieceInfo(piece.getBoundingBox(), isStart));
+            isStart = false;
+        }
+
+        ServerLevel serverWorld = worldGenLevel.getLevel();
+        sendPacketToAllPlayers(serverWorld, new StructuresDebugPayload(serverWorld.dimension(), structureStart.getBoundingBox(), pieces));
+    }
+
+    @Overwrite
+    public static void sendGoalSelector(Level world, Mob mob, GoalSelector goalSelector) {
+        List<DebugGoal> goals = goalSelector.getAvailableGoals().stream().map(goal -> new DebugGoal(goal.getPriority(), goal.isRunning(), goal.getGoal().toString())).toList();
+        sendPacketToAllPlayers((ServerLevel) world, new GoalDebugPayload(mob.getId(), mob.blockPosition(), goals));
+    }
+
+    @Overwrite
+    public static void sendRaids(ServerLevel server, Collection<Raid> raids) {
+    }
+
+    @Overwrite
     public static void sendEntityBrain(LivingEntity livingEntity) {
         Mob entity = (Mob) livingEntity;
         ServerLevel serverLevel = (ServerLevel) entity.level();
@@ -220,10 +224,39 @@ public abstract class MixinDebugPackets {
         sendPacketToAllPlayers(serverLevel, new BrainDebugPayload(new BrainDebugPayload.BrainDump(entity.getUUID(), entity.getId(), entity.getName().getString(), profession, xp, entity.getHealth(), entity.getMaxHealth(), entity.position(), inventory, entity.getNavigation().getPath(), wantsGolem, angerLevel, entity.getBrain().getActiveActivities().stream().map(Activity::toString).toList(), entity.getBrain().getRunningBehaviors().stream().map(BehaviorControl::debugString).toList(), getMemoryDescriptions(entity, serverLevel.getGameTime()), gossips, pois, potentialPois)));
     }
 
+    @Overwrite
+    public static void sendBeeInfo(Bee bee) {
+    }
+
+    @Overwrite
+    public static void sendBreezeInfo(Breeze breeze) {
+    }
+
+    @Overwrite
+    public static void sendGameEventInfo(Level world, Holder<GameEvent> event, Vec3 pos) {
+    }
+
+    @Overwrite
+    public static void sendGameEventListenerInfo(Level world, GameEventListener eventListener) {
+    }
+
+    @Overwrite
+    public static void sendHiveInfo(Level world, BlockPos pos, BlockState state, BeehiveBlockEntity blockEntity) {
+    }
+
+    @Shadow
+    private static List<String> getMemoryDescriptions(LivingEntity entity, long currentTime) {
+        return null;
+    }
+
     @Unique
     private static void addPoi(Brain<?> brain, MemoryModuleType<GlobalPos> memory, Set<BlockPos> pois) {
         Optional<BlockPos> blockPos = brain.getMemory(memory).map(GlobalPos::pos);
         Objects.requireNonNull(pois);
         blockPos.ifPresent(pois::add);
+    }
+
+    @Shadow
+    private static void sendPacketToAllPlayers(ServerLevel level, CustomPacketPayload payload) {
     }
 }
