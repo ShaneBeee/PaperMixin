@@ -33,10 +33,14 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.common.custom.BrainDebugPayload;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
+import net.minecraft.network.protocol.common.custom.GoalDebugPayload.DebugGoal;
+import net.minecraft.network.protocol.common.custom.NeighborUpdatesDebugPayload;
 import net.minecraft.network.protocol.common.custom.PathfindingDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiAddedDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiRemovedDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiTicketCountDebugPayload;
+import net.minecraft.network.protocol.common.custom.StructuresDebugPayload;
 import net.minecraft.network.protocol.common.custom.VillageSectionsDebugPayload;
 import net.minecraft.network.protocol.common.custom.WorldGenAttemptDebugPayload;
 import net.minecraft.network.protocol.game.DebugEntityNameGenerator;
@@ -48,6 +52,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.behavior.BehaviorControl;
+import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.gossip.GossipType;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
@@ -56,7 +61,10 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.schedule.Activity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructurePiece;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.pathfinder.Path;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -88,6 +96,33 @@ public abstract class MixinDebugPackets {
         if (path != null) {
             sendPacketToAllPlayers((ServerLevel) level, new PathfindingDebugPayload(mob.getId(), path, nodeReachProximity));
         }
+    }
+
+    @Overwrite
+    public static void sendNeighborsUpdatePacket(Level level, BlockPos pos) {
+        if (!level.isClientSide()) {
+            sendPacketToAllPlayers((ServerLevel) level, new NeighborUpdatesDebugPayload(level.getGameTime(), pos));
+        }
+    }
+
+    @Overwrite
+    public static void sendStructurePacket(WorldGenLevel worldGenLevel, StructureStart structureStart) {
+        List<StructuresDebugPayload.PieceInfo> pieces = new ArrayList<>();
+
+        boolean isStart = true;
+        for (StructurePiece piece : structureStart.getPieces()) {
+            pieces.add(new StructuresDebugPayload.PieceInfo(piece.getBoundingBox(), isStart));
+            isStart = false;
+        }
+
+        ServerLevel serverWorld = worldGenLevel.getLevel();
+        sendPacketToAllPlayers(serverWorld, new StructuresDebugPayload(serverWorld.dimension(), structureStart.getBoundingBox(), pieces));
+    }
+
+    @Overwrite
+    public static void sendGoalSelector(Level world, Mob mob, GoalSelector goalSelector) {
+        List<DebugGoal> goals = goalSelector.getAvailableGoals().stream().map(goal -> new DebugGoal(goal.getPriority(), goal.isRunning(), goal.getGoal().toString())).toList();
+        sendPacketToAllPlayers((ServerLevel) world, new GoalDebugPayload(mob.getId(), mob.blockPosition(), goals));
     }
 
     @Overwrite
