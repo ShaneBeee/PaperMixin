@@ -30,6 +30,7 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.common.custom.BeeDebugPayload;
 import net.minecraft.network.protocol.common.custom.BrainDebugPayload;
@@ -258,7 +259,8 @@ public abstract class DebugPacketsMixin {
     @Overwrite
     public static void sendHiveInfo(Level world, BlockPos pos, BlockState state, BeehiveBlockEntity blockEntity) {
         int honeyLevel = state.getValue(BlockStateProperties.LEVEL_HONEY);
-        sendPacketToAllPlayers((ServerLevel) world, new HiveDebugPayload(new HiveDebugPayload.HiveInfo(pos, state.getBlock().toString(), blockEntity.getOccupantCount(), honeyLevel, blockEntity.isSedated())));
+        String hiveType = BuiltInRegistries.BLOCK.wrapAsHolder(state.getBlock()).getRegisteredName();
+        sendPacketToAllPlayers((ServerLevel) world, new HiveDebugPayload(new HiveDebugPayload.HiveInfo(pos, hiveType, blockEntity.getOccupantCount(), honeyLevel, blockEntity.isSedated())));
     }
 
     @Shadow
