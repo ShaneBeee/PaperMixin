@@ -31,15 +31,21 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.protocol.common.custom.BeeDebugPayload;
 import net.minecraft.network.protocol.common.custom.BrainDebugPayload;
+import net.minecraft.network.protocol.common.custom.BreezeDebugPayload;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.protocol.common.custom.GameEventDebugPayload;
+import net.minecraft.network.protocol.common.custom.GameEventListenerDebugPayload;
 import net.minecraft.network.protocol.common.custom.GoalDebugPayload;
 import net.minecraft.network.protocol.common.custom.GoalDebugPayload.DebugGoal;
+import net.minecraft.network.protocol.common.custom.HiveDebugPayload;
 import net.minecraft.network.protocol.common.custom.NeighborUpdatesDebugPayload;
 import net.minecraft.network.protocol.common.custom.PathfindingDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiAddedDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiRemovedDebugPayload;
 import net.minecraft.network.protocol.common.custom.PoiTicketCountDebugPayload;
+import net.minecraft.network.protocol.common.custom.RaidsDebugPayload;
 import net.minecraft.network.protocol.common.custom.StructuresDebugPayload;
 import net.minecraft.network.protocol.common.custom.VillageSectionsDebugPayload;
 import net.minecraft.network.protocol.common.custom.WorldGenAttemptDebugPayload;
@@ -65,8 +71,10 @@ import net.minecraft.world.entity.schedule.Activity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.gameevent.GameEventListener;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -87,6 +95,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @SuppressWarnings({"deprecation", "DataFlowIssue", "unused"})
 @Mixin(DebugPackets.class)
@@ -170,13 +179,14 @@ public abstract class DebugPacketsMixin {
     }
 
     @Overwrite
-    public static void sendGoalSelector(Level world, Mob mob, GoalSelector goalSelector) {
+    public static void sendGoalSelector(Level level, Mob mob, GoalSelector goalSelector) {
         List<DebugGoal> goals = goalSelector.getAvailableGoals().stream().map(goal -> new DebugGoal(goal.getPriority(), goal.isRunning(), goal.getGoal().toString())).toList();
-        sendPacketToAllPlayers((ServerLevel) world, new GoalDebugPayload(mob.getId(), mob.blockPosition(), goals));
+        sendPacketToAllPlayers((ServerLevel) level, new GoalDebugPayload(mob.getId(), mob.blockPosition(), goals));
     }
 
     @Overwrite
-    public static void sendRaids(ServerLevel server, Collection<Raid> raids) {
+    public static void sendRaids(ServerLevel level, Collection<Raid> raids) {
+        sendPacketToAllPlayers(level, new RaidsDebugPayload(raids.stream().map(Raid::getCenter).toList()));
     }
 
     @Overwrite
@@ -226,22 +236,31 @@ public abstract class DebugPacketsMixin {
 
     @Overwrite
     public static void sendBeeInfo(Bee bee) {
+        Set<String> goals = bee.getGoalSelector().getAvailableGoals().stream().map(wrappedGoal -> wrappedGoal.getGoal().toString()).collect(Collectors.toSet());
+        sendPacketToAllPlayers((ServerLevel) bee.level(), new BeeDebugPayload(new BeeDebugPayload.BeeInfo(bee.getUUID(), bee.getId(), bee.position(), bee.getNavigation().getPath(), bee.getHivePos(), bee.getSavedFlowerPos(), bee.getTravellingTicks(), goals, bee.getBlacklistedHives())));
     }
 
     @Overwrite
     public static void sendBreezeInfo(Breeze breeze) {
+        BlockPos jumpTarget = breeze.getBrain().getMemory(MemoryModuleType.BREEZE_JUMP_TARGET).orElse(null);
+        Integer targetId = breeze.getTarget() == null ? null : breeze.getTarget().getId();
+        sendPacketToAllPlayers((ServerLevel) breeze.level(), new BreezeDebugPayload(new BreezeDebugPayload.BreezeInfo(breeze.getUUID(), breeze.getId(), targetId, jumpTarget)));
     }
 
     @Overwrite
-    public static void sendGameEventInfo(Level world, Holder<GameEvent> event, Vec3 pos) {
+    public static void sendGameEventInfo(Level level, Holder<GameEvent> gameEvent, Vec3 pos) {
+        gameEvent.unwrapKey().ifPresent(key -> sendPacketToAllPlayers((ServerLevel) level, new GameEventDebugPayload(key, pos)));
     }
 
     @Overwrite
-    public static void sendGameEventListenerInfo(Level world, GameEventListener eventListener) {
+    public static void sendGameEventListenerInfo(Level level, GameEventListener listener) {
+        sendPacketToAllPlayers((ServerLevel) level, new GameEventListenerDebugPayload(listener.getListenerSource(), listener.getListenerRadius()));
     }
 
     @Overwrite
     public static void sendHiveInfo(Level world, BlockPos pos, BlockState state, BeehiveBlockEntity blockEntity) {
+        int honeyLevel = state.getValue(BlockStateProperties.LEVEL_HONEY);
+        sendPacketToAllPlayers((ServerLevel) world, new HiveDebugPayload(new HiveDebugPayload.HiveInfo(pos, state.getBlock().toString(), blockEntity.getOccupantCount(), honeyLevel, blockEntity.isSedated())));
     }
 
     @Shadow

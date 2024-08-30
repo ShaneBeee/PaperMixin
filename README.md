@@ -12,8 +12,13 @@ Paper Mixin Mod
 - Plop this mod in the mods folder
 
 ## CURRENT FEATURES:
-- Pathfinder debug (F3+F6 - click pathfinder)
+- Bee Info debug (F3+F6 - click bee)
 - Brain/Poi/Village debug (F3+F6 - click brain/poi/village)
-- Neighbor Update debug (F3+F6 - click neighbor update)
-- Structure (F3+F6 - click structure) (this needs more work, currently only works when a structure first generates)
+- Breeze Info debug (F3+F6 - click breeze)
+- Game Event debug (F3+F6 - click game event)
 - Goal debug (F3+F6 - click goal)
+- Hive Info debug (F3+F6 - click bee)
+- Neighbor Update debug (F3+F6 - click neighbor update)
+- Pathfinder debug (F3+F6 - click pathfinder)
+- Structure debug (F3+F6 - click structure) (this needs more work, currently only works when a structure first generates)
+- Raids debug (F3+F6 - click raid center)
